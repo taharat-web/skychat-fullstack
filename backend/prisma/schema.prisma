@@ -1,0 +1,292 @@
+// SkyChat database schema
+// PostgreSQL + Prisma. Run `npx prisma migrate dev` to create/update the database,
+// or `npx prisma migrate deploy` in production.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
+// Group-scoped role. One-to-one conversations never use anything but MEMBER,
+// and roles are meaningless there - enforcement happens in the service layer.
+enum GroupRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum MessageType {
+  TEXT
+  SYSTEM
+}
+
+enum MessageStatusType {
+  SENT
+  DELIVERED
+  SEEN
+}
+
+enum NotificationType {
+  FRIEND_REQUEST_RECEIVED
+  FRIEND_REQUEST_ACCEPTED
+  GROUP_INVITE
+  GROUP_ROLE_CHANGED
+  GROUP_KICKED
+  GROUP_BANNED
+  MODERATION_ACTION
+  ACCOUNT_SECURITY
+  NEW_MESSAGE
+}
+
+// ---------------------------------------------------------------------------
+// Identity & auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id              String   @id @default(uuid())
+  username        String   @unique @db.VarChar(20)
+  email           String   @unique @db.VarChar(255)
+  passwordHash    String
+  avatarUrl       String?
+  bio             String?  @db.VarChar(280)
+  isEmailVerified Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  lastSeenAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+  refreshTokens           RefreshToken[]
+
+  sentFriendRequests     FriendRequest[] @relation("SentRequests")
+  receivedFriendRequests FriendRequest[] @relation("ReceivedRequests")
+
+  friendshipsA Friendship[] @relation("UserA")
+  friendshipsB Friendship[] @relation("UserB")
+
+  blocksInitiated Block[] @relation("Blocker")
+  blocksReceived  Block[] @relation("Blocked")
+
+  participants    ConversationParticipant[]
+  messages        Message[]
+  messageStatuses MessageStatus[]
+  notifications   Notification[]
+  activityLogs    ActivityLog[]             @relation("ActorLogs")
+
+  @@index([email])
+  @@index([username])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Opaque, rotated refresh tokens. Only the SHA-256 hash is stored so a leaked
+// database dump can't be replayed as a live session.
+model RefreshToken {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revoked    Boolean   @default(false)
+  replacedBy String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Social graph
+// ---------------------------------------------------------------------------
+
+model FriendRequest {
+  id         String              @id @default(uuid())
+  senderId   String
+  sender     User                @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User                @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     FriendRequestStatus @default(PENDING)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId, status])
+}
+
+// Symmetric friendship edge. Always stored with userAId < userBId (enforced
+// in the service layer) so a pair only ever has one row.
+model Friendship {
+  id        String   @id @default(uuid())
+  userAId   String
+  userA     User     @relation("UserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId   String
+  userB     User     @relation("UserB", fields: [userBId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userAId, userBId])
+  @@index([userBId])
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+// ---------------------------------------------------------------------------
+// Conversations & messaging
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id            String           @id @default(uuid())
+  type          ConversationType
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  lastMessageAt DateTime?
+
+  participants ConversationParticipant[]
+  messages     Message[]
+  group        GroupInfo?
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           GroupRole    @default(MEMBER)
+  isBanned       Boolean      @default(false)
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime     @default(now())
+  leftAt         DateTime?
+  hiddenAt       DateTime?
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model GroupInfo {
+  conversationId String       @id
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  name           String       @db.VarChar(100)
+  description    String?      @db.VarChar(500)
+  avatarUrl      String?
+  createdById    String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String?
+  sender         User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  type           MessageType  @default(TEXT)
+  content        String       @db.Text
+  isEdited       Boolean      @default(false)
+  isDeleted      Boolean      @default(false)
+  deletedById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  statuses MessageStatus[]
+
+  @@index([conversationId, createdAt])
+}
+
+// Per-recipient delivery/seen tracking. One row per (message, recipient).
+model MessageStatus {
+  id        String            @id @default(uuid())
+  messageId String
+  message   Message           @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    MessageStatusType @default(SENT)
+  updatedAt DateTime          @updatedAt
+
+  @@unique([messageId, userId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications & audit trail
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  payload   Json
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead, createdAt])
+}
+
+// Generic, structured audit log. `action` is a stable string constant (see
+// src/utils/activityActions.js), targetType/targetId let us scope queries
+// (e.g. all actions for a given group) without a wide join table per entity.
+model ActivityLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation("ActorLogs", fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+}
