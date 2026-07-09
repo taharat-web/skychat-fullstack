@@ -1,0 +1,18 @@
+export default function Logo({ size = 32, className = '' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      className={className}
+      role="img"
+      aria-label="SkyChat"
+    >
+      <rect width="32" height="32" rx="7" fill="#0B141A" />
+      <rect x="6" y="18" width="5" height="10" rx="2.5" fill="#005C4B" />
+      <rect x="13.5" y="12" width="5" height="16" rx="2.5" fill="#00A884" />
+      <rect x="21" y="6" width="5" height="22" rx="2.5" fill="#06CF9C" />
+    </svg>
+  );
+}
