@@ -10,20 +10,14 @@ const router = express.Router();
 
 const REFRESH_COOKIE_NAME = 'skychat_refresh_token';
 
+// Cookie configuration for cross-origin session persistence (Vercel to Render)
 function refreshCookieOptions(maxAgeMs) {
   return {
     httpOnly: true,
-    function refreshCookieOptions(maxAgeMs) {
-      return {
-        httpOnly: true,
-        secure: true,        // এখানে env.COOKIE_SECURE এর বদলে সরাসরি true করে দিন
-        sameSite: 'none',    // 'lax' এর বদলে 'none' করে দিন
-        path: '/api/auth',
-        maxAge: maxAgeMs,
-      };
-    }
+    secure: true,
+    sameSite: 'none',
     path: '/api/auth',
-    maxAge: maxAgeMs,
+    maxAge: maxAgeMs
   };
 }
 
@@ -35,8 +29,7 @@ function clearRefreshCookie(res) {
   res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' });
 }
 
-// ---- Validation schemas -----------------------------------------------------
-
+// Validation schemas
 const usernameSchema = z
   .string()
   .min(3, 'Username must be at least 3 characters')
@@ -47,7 +40,7 @@ const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
   .max(128)
-  .regex(/[A-Za-z]/, 'Password must contain at least one letter')
+  .regex(/[A-Z]/, 'Password must contain at least one letter')
   .regex(/[0-9]/, 'Password must contain at least one number');
 
 const signupSchema = z.object({
@@ -61,12 +54,20 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-const emailSchema = z.object({ email: z.string().email() });
-const tokenSchema = z.object({ token: z.string().min(10) });
-const resetPasswordSchema = z.object({ token: z.string().min(10), newPassword: passwordSchema });
+const emailSchema = z.object({
+  email: z.string().email(),
+});
 
-// ---- Routes -----------------------------------------------------------------
+const tokenSchema = z.object({
+  token: z.string().min(10),
+});
 
+const resetPasswordSchema = z.object({
+  token: z.string().min(10),
+  newPassword: passwordSchema,
+});
+
+// Routes
 router.post(
   '/signup',
   authLimiter,
