@@ -17,7 +17,6 @@ function getTransporter() {
         pass: env.SMTP_PASS
       }
     });
-    });
   } else {
     // No SMTP configured (typical for local dev). We still want the app to
     // work end-to-end, so emails are written to the server log instead of
