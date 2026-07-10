@@ -13,8 +13,15 @@ const REFRESH_COOKIE_NAME = 'skychat_refresh_token';
 function refreshCookieOptions(maxAgeMs) {
   return {
     httpOnly: true,
-    secure: env.COOKIE_SECURE,
-    sameSite: 'lax',
+    function refreshCookieOptions(maxAgeMs) {
+      return {
+        httpOnly: true,
+        secure: true,        // এখানে env.COOKIE_SECURE এর বদলে সরাসরি true করে দিন
+        sameSite: 'none',    // 'lax' এর বদলে 'none' করে দিন
+        path: '/api/auth',
+        maxAge: maxAgeMs,
+      };
+    }
     path: '/api/auth',
     maxAge: maxAgeMs,
   };
