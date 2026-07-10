@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import clsx from 'clsx';
@@ -16,6 +16,12 @@ export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const status = useAuthStore((s) => s.status);
   const isAuthed = status === 'authenticated';
+  const location = useLocation();
+
+  if (isAuthed && location.pathname === '/') {
+    const lastPage = localStorage.getItem('lastVisitedPage') || '/app';
+    return <Navigate to={lastPage} replace />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-app-bg">
@@ -33,7 +39,10 @@ export default function PublicLayout() {
                 to={link.to}
                 end={link.to === '/'}
                 className={({ isActive }) =>
-                  clsx('text-sm font-medium transition-colors', isActive ? 'text-ink-primary' : 'text-ink-secondary hover:text-ink-primary')
+                  clsx(
+                    'text-sm font-medium transition-colors',
+                    isActive ? 'text-ink-primary' : 'text-ink-secondary hover:text-ink-primary'
+                  )
                 }
               >
                 {link.label}
@@ -58,7 +67,11 @@ export default function PublicLayout() {
             )}
           </div>
 
-          <button className="md:hidden text-ink-primary" onClick={() => setMenuOpen((v) => !v)} aria-label="Toggle menu">
+          <button
+            className="md:hidden text-ink-primary"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Toggle menu"
+          >
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
@@ -66,7 +79,12 @@ export default function PublicLayout() {
         {menuOpen && (
           <div className="md:hidden border-t border-app-border px-5 py-4 flex flex-col gap-4">
             {LINKS.map((link) => (
-              <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="text-ink-secondary">
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => setMenuOpen(false)}
+                className="text-ink-secondary"
+              >
                 {link.label}
               </Link>
             ))}
@@ -121,4 +139,4 @@ export default function PublicLayout() {
       </footer>
     </div>
   );
-}
+                }
