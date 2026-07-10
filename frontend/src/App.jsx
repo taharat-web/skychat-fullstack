@@ -25,6 +25,9 @@ import NotificationsPage from './pages/NotificationsPage';
 import GroupManagePage from './pages/GroupManagePage';
 import NotFoundPage from './pages/NotFoundPage';
 
+// ১. এখানে নতুন FriendsPage ইমপোর্ট করা হয়েছে
+import FriendsPage from './pages/FriendsPage';
+
 export default function App() {
   const initialize = useAuthStore((s) => s.initialize);
 
@@ -55,6 +58,8 @@ export default function App() {
         <Route path="/app" element={<ProtectedLayout />}>
           <Route index element={<ChatPage />} />
           <Route path="c/:conversationId" element={<ChatPage />} />
+          {/* ২. এখানে Friends এর নতুন লিংকটি যোগ করা হয়েছে */}
+          <Route path="friends" element={<FriendsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
@@ -65,4 +70,4 @@ export default function App() {
       </Routes>
     </SocketProvider>
   );
-}
+    }
