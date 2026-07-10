@@ -9,11 +9,14 @@ function getTransporter() {
 
   if (env.SMTP_HOST) {
     transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS
       }
+    });
     });
   } else {
     // No SMTP configured (typical for local dev). We still want the app to
