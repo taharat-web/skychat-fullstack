@@ -46,11 +46,7 @@ async function issueEmailVerificationToken(user) {
   try {
     await sendVerificationEmail(user, raw);
   } catch (error) {
-    try {
-    await sendVerificationEmail(user, raw);
-  } catch (error) {
     throw new ApiError(500, "Google Error: " + error.message);
-    }
   }
 }
 
