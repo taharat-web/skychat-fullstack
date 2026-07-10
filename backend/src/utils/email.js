@@ -9,10 +9,11 @@ function getTransporter() {
 
   if (env.SMTP_HOST) {
     transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: Number(env.SMTP_PORT) || 587,
-      secure: env.SMTP_SECURE === 'true' || env.SMTP_SECURE === true,
-      auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS } : undefined
+      service: 'gmail',
+      auth: {
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASS
+      }
     });
   } else {
     // No SMTP configured (typical for local dev). We still want the app to
