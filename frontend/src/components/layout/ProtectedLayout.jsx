@@ -1,5 +1,6 @@
 import { Navigate, NavLink, Outlet } from 'react-router-dom';
-import { MessageCircle, Bell, User, Settings, LogOut } from 'lucide-react';
+// Added 'Users' icon for the Friends button
+import { MessageCircle, Bell, User, Settings, LogOut, Users } from 'lucide-react';
 import clsx from 'clsx';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
@@ -7,8 +8,10 @@ import useChatStore from '../../store/chatStore';
 import Spinner from '../common/Spinner';
 import Logo from '../common/Logo';
 
+// Added Friends button right after Chats
 const NAV_ITEMS = [
   { to: '/app', icon: MessageCircle, label: 'Chats', end: true },
+  { to: '/app/friends', icon: Users, label: 'Friends' }, 
   { to: '/app/notifications', icon: Bell, label: 'Notifications' },
   { to: '/app/profile', icon: User, label: 'Profile' },
   { to: '/app/settings', icon: Settings, label: 'Settings' },
@@ -64,7 +67,8 @@ export default function ProtectedLayout() {
                 clsx(
                   'relative flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-0',
                   'w-14 h-12 md:w-12 md:h-12 rounded-xl transition-colors',
-                  isActive ? 'bg-accent/15 text-accent-strong' : 'text-ink-secondary hover:bg-app-hover hover:text-ink-primary'
+                  isActive ?
+                  'bg-accent/15 text-accent-strong' : 'text-ink-secondary hover:bg-app-hover hover:text-ink-primary'
                 )
               }
               aria-label={label}
@@ -93,4 +97,4 @@ export default function ProtectedLayout() {
       </main>
     </div>
   );
-}
+      }
