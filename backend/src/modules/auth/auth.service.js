@@ -42,7 +42,15 @@ async function issueEmailVerificationToken(user) {
       expiresAt: new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS),
     },
   });
-  await sendVerificationEmail(user, raw);
+
+  try {
+    await sendVerificationEmail(user, raw);
+  } catch (error) {
+    console.error("====== EMAIL SENDING ERROR ======");
+    console.error(error);
+    console.error("=================================");
+    throw new ApiError(500, "Failed to send verification email. Please check your SMTP settings.");
+  }
 }
 
 async function resendVerification(email) {
