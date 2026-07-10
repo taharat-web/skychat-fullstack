@@ -3,7 +3,11 @@ const logger = require('./logger');
 
 // Brevo API দিয়ে ইমেইল পাঠানোর ফাংশন
 async function sendBrevoEmail({ to, subject, textContent, htmlContent }) {
-  if (!env.BREVO_API_KEY) {
+  // সরাসরি Render থেকে API Key এবং Email চিনে নেওয়ার ব্যবস্থা
+  const apiKey = process.env.BREVO_API_KEY || env.BREVO_API_KEY;
+  const senderEmail = process.env.SMTP_FROM || env.SMTP_FROM || process.env.SMTP_USER || env.SMTP_USER;
+
+  if (!apiKey) {
     logger.warn(`BREVO_API_KEY missing. Logging email to ${to}\nSubject: ${subject}\nBody: ${textContent}`);
     return;
   }
@@ -12,11 +16,11 @@ async function sendBrevoEmail({ to, subject, textContent, htmlContent }) {
     method: 'POST',
     headers: {
       'accept': 'application/json',
-      'api-key': env.BREVO_API_KEY,
+      'api-key': apiKey,
       'content-type': 'application/json'
     },
     body: JSON.stringify({
-      sender: { name: "SkyChat", email: env.SMTP_FROM || env.SMTP_USER },
+      sender: { name: "SkyChat", email: senderEmail },
       to: [{ email: to }],
       subject: subject,
       textContent: textContent,
