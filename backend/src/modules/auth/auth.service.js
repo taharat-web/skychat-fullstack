@@ -46,10 +46,11 @@ async function issueEmailVerificationToken(user) {
   try {
     await sendVerificationEmail(user, raw);
   } catch (error) {
-    console.error("====== EMAIL SENDING ERROR ======");
-    console.error(error);
-    console.error("=================================");
-    throw new ApiError(500, "Failed to send verification email. Please check your SMTP settings.");
+    try {
+    await sendVerificationEmail(user, raw);
+  } catch (error) {
+    throw new ApiError(500, "Google Error: " + error.message);
+    }
   }
 }
 
