@@ -1,15 +1,21 @@
 import { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Camera } from 'lucide-react';
+import { Camera, LogOut } from 'lucide-react';
 import Avatar from '../components/common/Avatar';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import useAuthStore from '../store/authStore';
+import useChatStore from '../store/chatStore';
+import useNotificationStore from '../store/notificationStore';
 import { usersApi } from '../api';
 
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
+  const logout = useAuthStore((s) => s.logout);
+  const resetChat = useChatStore((s) => s.reset);
+  const resetNotifications = useNotificationStore((s) => s.reset);
+  
   const fileInputRef = useRef(null);
 
   const [username, setUsername] = useState(user?.username || '');
@@ -49,6 +55,15 @@ export default function ProfilePage() {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function handleLogout() {
+    const confirmLogout = window.confirm("Are you sure you want to log out?");
+    if (!confirmLogout) return;
+
+    await logout();
+    resetChat();
+    resetNotifications();
   }
 
   return (
@@ -93,7 +108,17 @@ export default function ProfilePage() {
             Save changes
           </Button>
         </form>
+
+        <div className="mt-8 pt-6 border-t border-app-border md:hidden">
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center w-full gap-2 px-4 py-3 bg-danger/10 text-danger rounded-lg font-medium hover:bg-danger hover:text-white transition-colors"
+          >
+            <LogOut size={20} />
+            Log Out
+          </button>
+        </div>
       </div>
     </div>
   );
-}
+          }
