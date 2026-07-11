@@ -1,5 +1,4 @@
 import { Navigate, NavLink, Outlet } from 'react-router-dom';
-// Added 'Users' icon for the Friends button
 import { MessageCircle, Bell, User, Settings, LogOut, Users } from 'lucide-react';
 import clsx from 'clsx';
 import useAuthStore from '../../store/authStore';
@@ -8,7 +7,6 @@ import useChatStore from '../../store/chatStore';
 import Spinner from '../common/Spinner';
 import Logo from '../common/Logo';
 
-// Added Friends button right after Chats
 const NAV_ITEMS = [
   { to: '/app', icon: MessageCircle, label: 'Chats', end: true },
   { to: '/app/friends', icon: Users, label: 'Friends' }, 
@@ -37,6 +35,9 @@ export default function ProtectedLayout() {
   }
 
   async function handleLogout() {
+    const confirmLogout = window.confirm("Are you sure you want to log out?");
+    if (!confirmLogout) return;
+
     await logout();
     resetChat();
     resetNotifications();
@@ -44,7 +45,6 @@ export default function ProtectedLayout() {
 
   return (
     <div className="h-[100dvh] flex flex-col md:flex-row bg-app-bg overflow-hidden">
-      {/* Desktop rail / mobile bottom bar */}
       <nav
         className={clsx(
           'flex md:flex-col items-center justify-between md:justify-start',
@@ -67,8 +67,7 @@ export default function ProtectedLayout() {
                 clsx(
                   'relative flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-0',
                   'w-14 h-12 md:w-12 md:h-12 rounded-xl transition-colors',
-                  isActive ?
-                  'bg-accent/15 text-accent-strong' : 'text-ink-secondary hover:bg-app-hover hover:text-ink-primary'
+                  isActive ? 'bg-accent/15 text-accent-strong' : 'text-ink-secondary hover:bg-app-hover hover:text-ink-primary'
                 )
               }
               aria-label={label}
@@ -97,4 +96,4 @@ export default function ProtectedLayout() {
       </main>
     </div>
   );
-      }
+    }
